@@ -2,7 +2,7 @@
  * Asteroids kinda game in HTML5
  *
  * Author: Kushagra Gour a.k.a. chin chang
- * Date: 2 Oct 2012
+ * Date: 31 Aug 2015
  * Release under the MIT License
  */
 
@@ -159,8 +159,6 @@ Player.prototype.update = function(dt) {
 		this.y = 0;
 }
 
-
-
 /**
  * [Asteroid description]
  */
@@ -240,8 +238,6 @@ Word.prototype.update = function(dt) {
 };
 
 Word.prototype.checkCharacter = function(character) {
-	//this.correctIndex++;
-
 	if (this.value[this.correctIndex] === character) {
 		this.correctIndex++;
 		// console.log(this.value, this.correctIndex)
@@ -314,7 +310,27 @@ function onKeyPress(e) {
 		}
 	}
 }
+function drawFg () {
+	var c =  document.querySelector('#fg1'),
+	    ctx = c.getContext('2d'),
+	    i = 0,
+	    width = 2,
+	    separation = width + 1,
+	    count = H  /(separation);
+
+	c.width = W;
+	c.height = H;
+	ctx.fillStyle = 'hsla(0, 0%, 20%, 0.4)';
+	ctx.beginPath();
+	while (++i < count) {
+	    ctx.rect(0, i * separation, W, width);
+	    //ctx.rect(i*separation, 0, width, h);
+	}
+	ctx.fill();
+}
+
 function initGame() {
+	drawFg();
 	player = new Player;
 	player.reset();
 	addChild(player);
