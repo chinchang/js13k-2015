@@ -1,0 +1,55 @@
+<html>
+<head>
+	<style>
+	.hidden {
+		display: none;
+	}
+
+	body {
+		margin: 0;
+		padding: 0;
+		font-family: Arial;
+	}
+	canvas {
+		background-color: #222;
+	}
+	#message-box {
+		position: fixed;
+		padding: 20px;
+		top: 30%;
+		left: 50%;
+		width: 300px;
+		margin-left: -150px;
+		box-sizing: border-box;
+		background: white;
+		text-align: center;
+		opacity: 0.9;
+		border: 10px solid #F3F3F3;
+		border-radius: 15px;
+		z-index: 1000;
+	}
+
+	button {
+		background: hsl(85, 70%, 31%);
+		border: none;
+		padding: 15px 30px;
+		color: white;
+		cursor: pointer;
+	}
+	button:HOVER {
+		background: hsl(85, 70%, 40%);
+	}
+	</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+<div id="message-box" class="hidden">
+	<h1>Your Score</h1><h2>373672</h2><button>Next Level</button>
+</div>
+
+<script type="text/javascript" src="engine.js"></script>
+<script type="text/javascript" src="script.js"></script>
+</body>
+
+</html>
