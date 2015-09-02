@@ -72,7 +72,7 @@ function Player() {
 	this.shootBullet = function(character) {
 		if(this.can_shoot) {
 			shake(0.5);
-			addChild(new Bullet(this.x, this.y, this.rotation, character));
+			// addChild(new Bullet(this.x, this.y, this.rotation, character));
 			this.can_shoot = false;
 		}
 	};
@@ -242,6 +242,7 @@ Word.prototype.checkCharacter = function(character) {
 		this.correctIndex++;
 		// console.log(this.value, this.correctIndex)
 		if (this.correctIndex === this.value.length) {
+			createCoins(7, this.x, this.y);
 			removeChild(this);
 		}
 	}
@@ -255,25 +256,37 @@ Word.prototype.checkCharacter = function(character) {
  * @param {[type]} y     [description]
  * @param {[type]} theta [description]
  */
-function Bullet(x, y, theta, character) {
-	this.type = 'bullet';
+function Coin(x, y, theta) {
+	this.type = 'coin';
 	this.x = x;
 	this.y = y;
-	this.character = character;
 	this.width = 2;
 	this.height = 2;
-	this.speed = 300;
+	this.speed = 100 + random(200, 500);
 	this.speed_x = ~~(Math.cos(theta * pi_by_180) * this.speed);
 	this.speed_y = ~~(Math.sin(theta * pi_by_180) * this.speed);
 	this.hitarea = new Rectangle(-this.width/2, -this.height / 2, this.width, this.height);
-	this.lifetime_sec = 2.5;
+	this.lifetime_sec = 8;
 	this.color = '#ff0';
 }
-Bullet.prototype = new DisplayObject();
-Bullet.prototype.draw = function(context) {
-	context.font = '20px Verdana';
-	context.fillStyle = '#F00';
-	context.fillText(this.character, 0, 0);
+Coin.prototype = new DisplayObject();
+Coin.prototype.friction = 0.9;
+Coin.prototype.draw = function(context) {
+	context.fillStyle = '#ff0';
+	// context.lineWidth = 3;
+	// context.lineWidth = 7 + (Math.sin(pi_by_180 * Date.now() / 2) * 3);
+	context.shadowBlur = 5 + (Math.sin(pi_by_180 * Date.now() / 5) * 10);
+	context.shadowColor = this.color;
+
+	var radius = 7;//7 + (Math.sin(pi_by_180 * Date.now() / 2) * 3);
+	var scaleX = Math.sin(pi_by_180 * Date.now() / 5);
+
+	context.save();
+	context.scale(scaleX, 1);
+	context.beginPath();
+	context.arc(0, 0, radius, 0, 2 * Math.PI, false);
+	context.fill();
+	context.restore();
 	if(debug) {
 		context.strokeStyle = this.color || debug_color;
 		context.beginPath();
@@ -282,23 +295,31 @@ Bullet.prototype.draw = function(context) {
 	}
 }
 
-Bullet.prototype.update = function(dt) {
+Coin.prototype.update = function(dt) {
 	this.lifetime_sec -= dt;
-	if(this.lifetime_sec <= 0)
+	if (this.lifetime_sec <= 0 && this.state !== 'taken')
 		removeChild(this);
+	this.speed_x *= this.friction;
+	this.speed_y *= this.friction;
 	this.x += this.speed_x * dt;
 	this.y += this.speed_y * dt;
 
-	if(this.x > W)
-		this.x = 0;
-	if(this.x < 0)
-		this.x = W;
-	if(this.y < 0)
-		this.y = H;
-	if(this.y > H)
-		this.y = 0;
+	var dist = distanceBetweenPoints(this.x, this.y, player.x, player.y);
+	if (distanceBetweenPoints(this.x, this.y, player.x, player.y) < 200) {
+		this.x += (player.x - this.x) * 0.1;
+		this.y += (player.y - this.y) * 0.1;
+		if (dist < 20) {
+			this.state = 'taken';
+			removeChild(this);
+		}
+	}
 }
 
+function createCoins(n, x, y) {
+	for (var i = n; i--;) {
+		game_objects.push(new Coin(x, y, random(0, 360)));
+	}
+}
 function onKeyPress(e) {
 	var obj;
 	var c = String.fromCharCode(e.which).toLowerCase();
@@ -309,6 +330,25 @@ function onKeyPress(e) {
 			obj.checkCharacter(c);
 		}
 	}
+}
+function drawBg () {
+    var c =  document.querySelector('#bg1'),
+        ctx = c.getContext('2d'),
+        i = 0,
+        size = 0;
+	c.width = W;
+	c.height = H;
+    // ctx.scale(scale, scale);
+    drawRect('hsl(0, 0%, 10%)', 0, 0, W, H, ctx);
+
+    ctx.fillStyle = 'hsl(0, 0%, 20%)';
+    ctx.beginPath();
+    while (++i < 150) {
+        size = random(1, 10);
+        // ctx.arc(~~(Math.random() * W), ~~(Math.random() * H), size, 0, 2 * Math.PI, false);
+        ctx.rect(~~(Math.random() * W), ~~(Math.random() * H), size, size);
+    }
+    ctx.fill();
 }
 function drawFg () {
 	var c =  document.querySelector('#fg1'),
@@ -330,6 +370,7 @@ function drawFg () {
 }
 
 function initGame() {
+	drawBg();
 	drawFg();
 	player = new Player;
 	player.reset();
@@ -346,7 +387,13 @@ function resize(e) {
 	W = canvas.width = window.innerWidth;
 	H = canvas.height = window.innerHeight;
 }
-
+function drawRect(fill_color, x, y, width, height, _ctx) {
+    _ctx = _ctx || ctx;
+    _ctx.beginPath();
+    _ctx.fillStyle = fill_color || '#e22';
+    _ctx.rect(x, y, width, height);
+    _ctx.fill();
+}
 function reverseWord(word) {
 	return word.split('').reverse().join('');
 }
