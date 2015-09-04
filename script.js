@@ -22,7 +22,7 @@ var game_config = {
 	score_key: 'sdrow'
 };
 
-var player,
+var hero,
 	asteroids = [],
 	friction = 1.4,
 	sounds = {},
@@ -76,9 +76,6 @@ function Player() {
 	this.turn_speed = 180;
 	this.width = 25;
 	this.height = 15;
-	this.can_shoot = true;
-	this.delayBetweenBullets_sec = 0.3;
-	this.bullet_timer = this.delayBetweenBullets_sec;
 	this.color = '#0f0';
 	this.generateWordTime = 0;
 	this.wordGenerateInterval = 2;
@@ -97,14 +94,6 @@ function Player() {
 			}
 		}
 		setChildIndex(this, objs.length - 1);
-	};
-
-	this.shootBullet = function(character) {
-		if(this.can_shoot) {
-			// shake(0.2);
-			// addChild(new Bullet(this.x, this.y, this.rotation, character));
-			this.can_shoot = false;
-		}
 	};
 }
 Player.prototype = new DisplayObject();
@@ -135,13 +124,6 @@ Player.prototype.draw = function(context) {
 }
 
 Player.prototype.update = function(dt) {
-	if(!this.can_shoot) {
-		this.bullet_timer -= dt;
-		if(this.bullet_timer <= 0) {
-			this.can_shoot = true;
-			this.bullet_timer = this.delayBetweenBullets_sec;
-		}
-	}
 	this.generateWordTime -= dt;
 
 	if (this.generateWordTime < 0) {
@@ -169,9 +151,6 @@ Player.prototype.update = function(dt) {
 			// this.speed_x = 0;
 	}
 
-	if (keys[32]) {
-		this.shootBullet();
-	}
 	this.speed_x *= this.friction;
 	this.speed_y *= this.friction;
 	this.x += this.speed_x * dt;
@@ -234,8 +213,8 @@ Word.prototype.draw = function(context) {
 
 	context.beginPath();
 	context.moveTo(this.value.length * 10, 0);
-	context.lineTo(player.x - this.x, player.y - this.y);
-	var alpha = 0.6 * (1 - dist(this.x, this.y, player.x, player.y) / H);
+	context.lineTo(hero.x - this.x, hero.y - this.y);
+	var alpha = 0.6 * (1 - dist(this.x, this.y, hero.x, hero.y) / H);
 	// console.log(alpha)
 	context.strokeStyle = 'rgba(255, 255, 255, ' + alpha + ')';
 	context.stroke();
@@ -279,7 +258,7 @@ Word.prototype.checkCharacter = function(character) {
 }
 
 /**
- * [Bullet description]
+ * [Coin description]
  * @param {[type]} x     [description]
  * @param {[type]} y     [description]
  * @param {[type]} theta [description]
@@ -331,10 +310,10 @@ cp.update = function(dt) {
 	this.x += this.speed_x * dt;
 	this.y += this.speed_y * dt;
 
-	var d = dist(this.x, this.y, player.x, player.y);
+	var d = dist(this.x, this.y, hero.x, hero.y);
 	if (d < 200) {
-		this.x += (player.x - this.x) * 0.1;
-		this.y += (player.y - this.y) * 0.1;
+		this.x += (hero.x - this.x) * 0.1;
+		this.y += (hero.y - this.y) * 0.1;
 		if (d < 20) {
 			this.state = 'taken';
 			play('coin');
@@ -359,7 +338,7 @@ function createCoins(n, x, y) {
 function onKey(e) {
 	var obj;
 	var c = String.fromCharCode(e.which).toLowerCase();
-	player.shootBullet(c);
+	hero.shootBullet(c);
 	for (var i = objs.length; i--;) {
 		obj = objs[i];
 		if (obj.type === 'word') {
@@ -408,9 +387,9 @@ function drawFg () {
 function initGame() {
 	drawBg();
 	drawFg();
-	player = new Player;
-	player.reset();
-	addChild(player);
+	hero = new Player;
+	hero.reset();
+	addChild(hero);
 
 	for(var i = 0; i < 4; i++)
 		objs.push(new Word);
