@@ -77,7 +77,7 @@ function Player() {
 	this.width = 25;
 	this.height = 15;
 	this.color = '#0f0';
-	this.generateWordTime = 0;
+	this.generateWordTime = 5;
 	this.wordGenerateInterval = 2;
 
 	this.reset = function() {
@@ -176,11 +176,11 @@ function Word(params) {
 	this.type = 'word';
 	this.level = params.level || 3;
 	this.x = random(50, W - 50 * 2);
-	this.y = random(-100, -10);
+	this.y = random(0, 5);
 	this.width = asteroid_levels[this.level].width;
 	this.height = asteroid_levels[this.level].height;
 	this.isDead = false;
-	this.speed_y = Math.random() * 50 + 5;
+	this.speed_y = random(20, 60);
 	this.color = '#f00';
 	this.value = words[~~(Math.random() * words.length)];
 	this.isReversed = 1; //random(0,1);
@@ -204,28 +204,24 @@ function Word(params) {
 	}
 }
 Word.prototype = new DisplayObject();
-Word.prototype.draw = function(context) {
-	context.font = '30px Verdana';
-	context.fillStyle = '#F00';
-	context.fillText(this.isReversed ? this.reversedValue : this.value, 0, 0);
-	context.fillStyle = '#FF0';
-	context.fillText((this.isReversed ? this.reversedValue : this.value).substr(0, this.correctIndex), 0, 0);
+Word.prototype.draw = function(ctx) {
+	ctx.font = '30px Verdana';
+	var c1 = this.isReversed ? '#FF0' : '#F00', // yellow - right ones
+		c2 = this.isReversed ? '#F00' : '#FF0';
+		substrLen = this.isReversed ? this.value.length - this.correctIndex : this.correctIndex ;
+	ctx.fillStyle = c1;
+	ctx.fillText(this.isReversed ? this.reversedValue : this.value, 0, 0);
+	ctx.fillStyle = c2
+	ctx.fillText((this.isReversed ? this.reversedValue : this.value).substr(0, substrLen), 0, 0);
 
-	context.beginPath();
-	context.moveTo(this.value.length * 10, 0);
-	context.lineTo(hero.x - this.x, hero.y - this.y);
+	ctx.beginPath();
+	ctx.moveTo(this.value.length * 10, 0);
+	ctx.lineTo(hero.x - this.x, hero.y - this.y);
 	var alpha = 0.6 * (1 - dist(this.x, this.y, hero.x, hero.y) / H);
 	// console.log(alpha)
-	context.strokeStyle = 'rgba(255, 255, 255, ' + alpha + ')';
-	context.stroke();
-	context.beginPath();
-
-	if(debug) {
-		context.strokeStyle = this.color || debug_color;
-		context.beginPath();
-		context.rect(this.hitarea.x, this.hitarea.y, this.hitarea.width, this.hitarea.height);
-		context.stroke();
-	}
+	ctx.strokeStyle = 'rgba(255, 255, 255, ' + alpha + ')';
+	ctx.stroke();
+	ctx.beginPath();
 }
 
 Word.prototype.update = function(dt) {
@@ -237,8 +233,10 @@ Word.prototype.update = function(dt) {
 		this.x = W;
 	if(this.y < 0)
 		this.y = H;
-	if(this.y > H)
-		this.y = 0;
+	if(this.y > H) {
+		damage();
+		removeChild(this);
+	}
 
 	this.checkCollision();
 };
@@ -277,28 +275,22 @@ function Coin(x, y, theta) {
 }
 var cp = Coin.prototype = new DisplayObject();
 cp.friction = 0.9;
-cp.draw = function(context) {
-	context.fillStyle = '#ff0';
-	// context.lineWidth = 3;
-	// context.lineWidth = 7 + (Math.sin(pi_by_180 * Date.now() / 2) * 3);
-	context.shadowBlur = 5 + (Math.sin(pi_by_180 * Date.now() / 5) * 10);
-	context.shadowColor = this.color;
+cp.draw = function(ctx) {
+	ctx.fillStyle = '#ff0';
+	// ctx.lineWidth = 3;
+	// ctx.lineWidth = 7 + (Math.sin(pi_by_180 * Date.now() / 2) * 3);
+	ctx.shadowBlur = 5 + (Math.sin(pi_by_180 * Date.now() / 5) * 10);
+	ctx.shadowColor = this.color;
 
 	var radius = 7;//7 + (Math.sin(pi_by_180 * Date.now() / 2) * 3);
 	var scaleX = Math.sin(pi_by_180 * Date.now() / 5);
 
-	context.save();
-	context.scale(scaleX, 1);
-	context.beginPath();
-	context.arc(0, 0, radius, 0, 2 * Math.PI, false);
-	context.fill();
-	context.restore();
-	if(debug) {
-		context.strokeStyle = this.color || debug_color;
-		context.beginPath();
-		context.rect(this.hitarea.x, this.hitarea.y, this.hitarea.width, this.hitarea.height);
-		context.stroke();
-	}
+	ctx.save();
+	ctx.scale(scaleX, 1);
+	ctx.beginPath();
+	ctx.arc(0, 0, radius, 0, 2 * Math.PI, false);
+	ctx.fill();
+	ctx.restore();
 }
 
 cp.update = function(dt) {
@@ -338,7 +330,6 @@ function createCoins(n, x, y) {
 function onKey(e) {
 	var obj;
 	var c = String.fromCharCode(e.which).toLowerCase();
-	hero.shootBullet(c);
 	for (var i = objs.length; i--;) {
 		obj = objs[i];
 		if (obj.type === 'word') {
@@ -361,7 +352,7 @@ function drawBg () {
     while (++i < 150) {
         size = random(1, 10);
         // ctx.arc(~~(Math.random() * W), ~~(Math.random() * H), size, 0, 2 * Math.PI, false);
-        ctx.rect(~~(Math.random() * W), ~~(Math.random() * H), size, size);
+        ctx.rect(random(W), random(H), size, size);
     }
     ctx.fill();
 }
@@ -387,6 +378,7 @@ function drawFg () {
 function initGame() {
 	drawBg();
 	drawFg();
+	resetScore();
 	hero = new Player;
 	hero.reset();
 	addChild(hero);
@@ -398,9 +390,13 @@ function initGame() {
 	window.addEventListener('keypress', onKey);
 }
 
+function damage() {
+	play('explosion');
+	score--;
+}
 function resize(e) {
-	W = canvas.width = window.innerWidth;
-	H = canvas.height = window.innerHeight;
+	W = c.width = window.innerWidth;
+	H = c.height = window.innerHeight;
 }
 function drawRect(fill_color, x, y, width, height, _ctx) {
     _ctx = _ctx || ctx;

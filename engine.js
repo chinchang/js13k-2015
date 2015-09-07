@@ -32,6 +32,8 @@ var FPS = 60,
 	shakeTime = 0,
 	shakeTimeMax = 0,
 	shakeIntensity = 7,
+	score = 0,
+	hs = 0,
 	PAUSE = true;
 
 
@@ -54,18 +56,6 @@ p.visible = true;
 p.hitTestPoint = null;
 p.draw = function(context) {};
 p.update = function(dt) {};
-p.hitTestPoint = function(x, y) { return false; };
-p.hitTestObject = function(obj) {
-	if(!this.hitarea || !obj.hitarea) return false;
-	// convert the hitareas into global cordinate
-	var r1 = this.hitarea.clone();
-	r1.x += this.x;
-	r1.y += this.y;
-	var r2 = obj.hitarea.clone();
-	r2.x += obj.x;
-	r2.y += obj.y;
-	return r1.intersects(r2);
-};
 
 /**
  * @class A stage can't be instantiated and all properties and methods are static
@@ -272,6 +262,7 @@ function shake(time) {
 	shakeTimeMax = shakeTime = time;
 }
 function random(min, max) {
+	if (!max) { max = min; min = 0; }
 	return min + ~~(Math.random() * (max - min + 1))
 }
 
