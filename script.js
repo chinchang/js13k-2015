@@ -22,7 +22,7 @@ var game_config = {
 	score_key: 'sdrow'
 };
 
-var hero,
+var	hero,
 	asteroids = [],
 	friction = 1.4,
 	sounds = {},
@@ -32,8 +32,11 @@ var hero,
 		3: {width: 35, height: 35},
 	},
 	coins = 0,
-	hasPower = false,
-	words = ['cat', 'fog', 'harm', 'crazy', 'game', 'fun'];
+	powerCounter = 0,
+	tutIndex = 0,
+	tutorial = [ 'type me', 'me too', 'collect coins', 'coins reverse words'],
+	words1 = ['amazing', 'poor', 'brilliant', 'crazy', 'horrible', 'fun'],
+	words2 = ['cat', 'elephant', 'concept', 'game', 'gamer', 'power'];
 
 snd('coin', [
 	[2,,0.0547,0.5447,0.1704,0.5662,,,,,,,,,,,,,1,,,,,0.5],
@@ -73,28 +76,17 @@ function Player() {
 	this.max_speed = 300;
 	this.acceleration = 2000;
 	this.friction = 0.93;
-	this.turn_speed = 180;
 	this.width = 25;
 	this.height = 15;
 	this.color = '#0f0';
-	this.generateWordTime = 5;
-	this.wordGenerateInterval = 2;
+	this.generateWordTime = 2;
+	this.wordGenerateInterval = 3;
 
 	this.reset = function() {
 		this.x = W / 2;
 		this.y = H - 100;
 		this.speed_x = this.speed_y = 0;
 	}
-	this.checkCollision = function() {
-		for (var i = objs.length; i--;) {
-			var obj = objs[i];
-			if(obj.type === 'word' && this.hitTestObject(obj)) {
-				this.reset();
-				// removeChild(obj);
-			}
-		}
-		setChildIndex(this, objs.length - 1);
-	};
 }
 Player.prototype = new DisplayObject();
 Player.prototype.draw = function(context) {
@@ -115,12 +107,6 @@ Player.prototype.draw = function(context) {
 	// context.lineTo(-this.width / 2, -this.height / 2);
 	// context.closePath();
 	context.stroke();
-	if(debug) {
-		context.strokeStyle = debug_color;
-		context.beginPath();
-		context.rect(this.hitarea.x, this.hitarea.y, this.hitarea.width, this.hitarea.height);
-		context.stroke();
-	}
 }
 
 Player.prototype.update = function(dt) {
@@ -156,8 +142,6 @@ Player.prototype.update = function(dt) {
 	this.x += this.speed_x * dt;
 	this.y += this.speed_y * dt;
 
-	// this.checkCollision();
-
 	if(this.x > W)
 		this.x = 0;
 	if(this.x < 0)
@@ -175,32 +159,20 @@ function Word(params) {
 	params = params || {};
 	this.type = 'word';
 	this.level = params.level || 3;
-	this.x = random(50, W - 50 * 2);
+	this.x = random(100, W - 200 * 2);
 	this.y = random(0, 5);
 	this.width = asteroid_levels[this.level].width;
 	this.height = asteroid_levels[this.level].height;
 	this.isDead = false;
-	this.speed_y = random(20, 60);
-	this.color = '#f00';
-	this.value = words[~~(Math.random() * words.length)];
-	this.isReversed = 1; //random(0,1);
+	this.speed_y = 60;
+	this.value = tutIndex === tutorial.length ? words1[random(words1.length-1)] + ' ' + words2[random(words2.length-1)] : tutorial[tutIndex++];
+	this.isReversed = tutIndex === tutorial.length ? !!random(0,1) : 0;
+	if (tutIndex === 4) { this.isReversed = true; }
 	this.reversedValue = reverse(this.value);
 	this.correctIndex = 0;
 
-	this.checkCollision = function() {
-		for (var i = objs.length; i--;) {
-			var obj = objs[i];
-			if(obj.type === 'bullet' && this.hitTestObject(obj)) {
-				removeChild(obj);
-				this.hit();
-			}
-		}
-		setChildIndex(this, objs.length - 1);
-	};
-
 	this.hit = function() {
 		return;
-
 	}
 }
 Word.prototype = new DisplayObject();
@@ -237,18 +209,18 @@ Word.prototype.update = function(dt) {
 		damage();
 		removeChild(this);
 	}
-
-	this.checkCollision();
 };
 
 Word.prototype.checkCharacter = function(character) {
 	if (this.value[this.correctIndex] === character) {
 		this.correctIndex++;
+		if(this.value[this.correctIndex] === ' ') this.correctIndex++;
 		play('hit');
 		// console.log(this.value, this.correctIndex)
 		if (this.correctIndex === this.value.length) {
-			createCoins(7, this.x, this.y);
+			createCoins(8, this.x, this.y);
 			play('explosion');
+			score++;
 			shake(1);
 			removeChild(this);
 		}
@@ -310,6 +282,7 @@ cp.update = function(dt) {
 			this.state = 'taken';
 			play('coin');
 			coins++;
+			powerCounter++;
 			checkPower();
 			removeChild(this);
 		}
@@ -317,9 +290,21 @@ cp.update = function(dt) {
 }
 
 function checkPower() {
-	if (!hasPower && coins > 10) {
-		hasPower = true;
-		play('powerup');
+	if (powerCounter > 9) {
+		var got = false;
+		for (var i = 0; i<objs.length; i++) {
+			var obj = objs[i];
+			if (obj.type === 'word' && obj.isReversed) {
+				console.log(99, obj)
+				obj.isReversed = false;
+				got = true;
+				break;
+			}
+		}
+		if (got) {
+			play('powerup');
+			powerCounter = 0;
+		}
 	}
 }
 function createCoins(n, x, y) {
@@ -375,24 +360,30 @@ function drawFg () {
 	ctx.fill();
 }
 
+function reset() {
+	resetScore();
+	tutIndex = 0;
+}
 function initGame() {
 	drawBg();
 	drawFg();
-	resetScore();
+	reset();
 	hero = new Player;
 	hero.reset();
 	addChild(hero);
 
-	for(var i = 0; i < 4; i++)
-		objs.push(new Word);
-
 	PAUSE = false;
-	window.addEventListener('keypress', onKey);
+	wae('keypress', onKey);
 }
 
 function damage() {
 	play('explosion');
-	score--;
+	shake(3);
+	life--;
+	if (!life) {
+		PAUSE = 1;
+		document.querySelector('#lost').style.display = 'block';
+	}
 }
 function resize(e) {
 	W = c.width = window.innerWidth;
@@ -433,6 +424,6 @@ function initialize() {
 	init('c');
 }
 
-window.addEventListener('load', initialize);
-window.addEventListener('resize', game.resize);
+wae('load', initialize);
+wae('resize', game.resize);
 window.debug=0;

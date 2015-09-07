@@ -13,6 +13,7 @@ window.requestAnimFrame = (function(){
 /**
  * Game Core (WARNING: Handle with care)
  */
+var wae = window.addEventListener;
 
 var FPS = 60,
 	pi_by_180 = Math.PI / 180,
@@ -33,6 +34,7 @@ var FPS = 60,
 	shakeTimeMax = 0,
 	shakeIntensity = 7,
 	score = 0,
+	life = 2,
 	hs = 0,
 	PAUSE = true;
 
@@ -61,11 +63,6 @@ p.update = function(dt) {};
  * @class A stage can't be instantiated and all properties and methods are static
  */
 var Stage = function(){
-	this.mouseX = null;
-	this.mouseY = null;
-	this.hitTestPoint = function(x, y) {
-		return true;
-	};
 };
 
 /**
@@ -86,9 +83,6 @@ function init(c_id) {
 
 	objs = [];
 	stage = new Stage();
-	stage.onClicked = function(e){
-		// onStageClicked(e);
-	}
 
 	stage.update = function(dt){
 		if ('function' === typeof onStageUpdated)
@@ -146,9 +140,9 @@ function init(c_id) {
 	addChild(entities_text);
 	game.init();
 
-	window.addEventListener('keypress', onKeyPress);
-	window.addEventListener('keydown', onKeyDown);
-	window.addEventListener('keyup', onKeyUp);
+	wae('keypress', onKeyPress);
+	wae('keydown', onKeyDown);
+	wae('keyup', onKeyUp);
 	gameLoop();
 }
 
@@ -167,7 +161,7 @@ function onKeyDown(e) {
 
 function onKeyPress(e) {
 	if({68:1,100:1}[e.which]){
-		debug ^= 1;
+		// debug ^= 1;
 	}
 	else if(PAUSE && {88:1,120:1}[e.which]){
 	}
@@ -221,6 +215,11 @@ function draw() {
 			context.restore();
 		}
 	}
+	context.font = '18px Verdana';
+	context.fillStyle = '#FF0';
+	context.fillText('Score: ' + score, 20, H - 30);
+	context.fillText('Life: ' + life, 20, H - 10);
+
 	if (shakeTime > 0) {
 		context.restore();
 	}
